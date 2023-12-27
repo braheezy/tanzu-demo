@@ -19,7 +19,7 @@ Vagrant.configure(2) do |config|
 
       node.vm.provider 'libvirt' do |lv, config|
         lv.default_prefix = ""
-        lv.memory = 4*1024
+        lv.memory = 12*1024
         lv.cpus = 4
         lv.storage :file, :bus => 'ide', :cache => 'unsafe', :size => "#{DATASTORE_DISK_SIZE_GB}G"
       end
@@ -44,46 +44,6 @@ Vagrant.configure(2) do |config|
 
       # create the datastore1 datastore in the second disk.
       node.vm.provision :shell, privileged: false, path: 'scripts/datastore.sh'
-
-      # show the installation summary.
-#       node.vm.provision "summary", type: "shell", run: "always", privileged: false,
-# inline: <<-SCRIPT
-# #!/bin/sh
-# set -ueo pipefail
-
-# fqdn="$(hostname -f)"
-# management_ip_address="$(esxcli --formatter=csv network ip interface ipv4 get -i vmk0 | tail +2 | awk -F, '{print $4}')"
-
-# esxcli system version get
-
-# cat <<EOF
-
-# To access this system, add this host managament IP address to your hosts file:
-
-#     ./create-client-hosts.sh
-#     # File contains this for each node
-#     $management_ip_address $fqdn
-
-# Trust the example CA:
-
-#     sudo install shared/tls/example-esxi-ca/example-esxi-ca-crt.pem /usr/local/share/ca-certificates/example-esxi-ca.crt
-#     sudo update-ca-certificates -v
-#     certutil -d sql:\$HOME/.pki/nssdb -A -t 'C,,' -n 'Example ESXi CA' -i shared/tls/example-esxi-ca/example-esxi-ca-crt.pem
-#     certutil -d sql:\$HOME/.pki/nssdb -L
-#     #certutil -d sql:\$HOME/.pki/nssdb -D -n 'Example ESXi CA' # delete.
-
-# Access the management web interface at:
-
-#     https://$fqdn
-
-# And login with the following user name and password:
-
-#     root
-#     Rootpass1!
-
-# EOF
-
-# SCRIPT
     end
   end
 
@@ -93,17 +53,26 @@ Vagrant.configure(2) do |config|
 
     client.vm.provision :shell, inline: "rm -rf /tmp/tls &>/dev/null || true"
 
+    client.vm.provision "scripts", type: "file", source: 'scripts', destination: '/tmp/'
     client.vm.provision :file, source: 'client_hosts_file', destination: '/tmp/'
     client.vm.provision :file, source: MANAGEMENT_CERTIFICATE_PATH, destination: '/tmp/tls'
 
-    client.vm.provision :shell, reboot: true, inline: <<-SCRIPT
+    client.vm.provision "install", type: "shell", reboot: true, inline: <<-SCRIPT
       #!/bin/bash
       yum update -y
       yum makecache
-      yum install -y firefox xorg-x11-xauth kitty-terminfo nss-tools openssl
+      yum install -y firefox xorg-x11-xauth kitty-terminfo nss-tools openssl expect
+
+      if ! command -V govc &>/dev/null; then
+        wget -q https://github.com/vmware/govmomi/releases/download/v0.34.1/govc_Linux_x86_64.tar.gz
+        tar xzf govc_Linux_x86_64.tar.gz -C /usr/bin govc
+        rm govc_Linux_x86_64.tar.gz
+      fi
+
+      echo "export GOVC_URL='https://root:Rootpass1!@esxi-1.esxi.test'"  > /etc/profile.d/govc.sh
     SCRIPT
 
-    client.vm.provision "test", type: "shell", privileged: false, inline: <<-SCRIPT
+    client.vm.provision "setup", type: "shell", privileged: false, inline: <<-SCRIPT
       #!/bin/bash
       # Add trust for Firefox
       firefox -headless &>/dev/null &
@@ -118,8 +87,17 @@ Vagrant.configure(2) do |config|
       sudo bash -c 'cat /tmp/tls/esxi.test-crt.pem >> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'
 
       # Set hosts file
-      sudo mv /tmp/client_hosts_file /etc/hosts
+      [ -f /tmp/client_hosts_file ] && sudo mv /tmp/client_hosts_file /etc/hosts
+
+      mkdir -p ~/.bashrc.d
+      echo "alias launchUI='firefox https://esxi-1.esxi.test &>/dev/null &'" > ~/.bashrc.d/aliases
+
+      mkdir -p ~/.ssh
+      echo -e "Host *\n\tStrictHostKeychecking no\n" > ~/.ssh/config
+      ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
     SCRIPT
+
+    client.vm.provision "routedep", type: "shell", privileged: false, path: "scripts/deploy-photon-router.sh"
   end
 
   config.vm.provider 'libvirt' do |lv, config|
@@ -128,5 +106,4 @@ Vagrant.configure(2) do |config|
     lv.cpus = 2
   end
   config.ssh.forward_x11 = true
-  config.ssh.forward_agent = true
 end

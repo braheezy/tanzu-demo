@@ -2,6 +2,13 @@
 set -euxo pipefail
 
 datastore_name='datastore1'
+
+# Check if datastore1 already exists
+if esxcli storage filesystem list | grep -q -w $datastore_name; then
+    echo "Datastore $datastore_name already exists. Exiting..."
+    exit 0
+fi
+
 # e.g. ide.0:1,t10.ATA_____QEMU_HARDDISK___________________________QM00002_____________,
 disk_device="/vmfs/devices/disks/$(
     esxcli --formatter=csv --format-param=fields=TargetIdentifier,Device storage core path list \

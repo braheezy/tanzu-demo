@@ -1,0 +1,6 @@
+client_hosts_file
+*.box
+.vagrant
+shared/
+*.iso
+*.qcow2

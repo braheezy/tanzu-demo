@@ -108,3 +108,23 @@ fi
 iptables-save > /etc/systemd/scripts/ip4save
 
 systemctl restart iptables
+
+# Sanity check
+if nslookup google.com $PHOTON_ROUTER_IP &>/dev/null; then
+    echo "Lookup to google.com works!"
+else
+    echo "Lookup to google.com failed :("
+    exit 1
+fi
+if nslookup vcsa.$DOMAIN $PHOTON_ROUTER_IP &>/dev/null; then
+    echo "Lookup to vcsa.$DOMAIN works!"
+else
+    echo "Lookup to vcsa.$DOMAIN failed :("
+    exit 1
+fi
+if nslookup $BASE_IP_RANGE.5 $PHOTON_ROUTER_IP &>/dev/null; then
+    echo "Lookup to $BASE_IP_RANGE.5 works!"
+else
+    echo "Lookup to $BASE_IP_RANGE.5 failed :("
+    exit 1
+fi

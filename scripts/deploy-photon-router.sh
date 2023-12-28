@@ -45,6 +45,9 @@ govc import.ova \
 
 guestIP=$(govc vm.ip "$PhotonRouterVMName")
 
+govc host.autostart.configure -enabled
+govc host.autostart.add $PhotonRouterVMName
+
 # Now, hack in a new root password :D
 expect - <<EOF
 set old_password "changeme"
@@ -73,8 +76,8 @@ if [ -f /tmp/scripts/configure-photon-router.sh ]; then
 fi
 
 # Setup easy access
-echo -e "Host router\n\tUser root" > ~/.ssh/config
 if grep -q "router" /etc/hosts; then
+  echo -e "Host router\n\tUser root" >> ~/.ssh/config
   # This is the static IP that will get assigned in configure-photon-router.sh
-  echo "192.168.122      router" >> /etc/hosts
+  echo "192.168.122.2      router" >> /etc/hosts
 fi

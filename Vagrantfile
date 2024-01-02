@@ -19,9 +19,11 @@ Vagrant.configure(2) do |config|
 
       node.vm.provider 'libvirt' do |lv, config|
         lv.default_prefix = ""
-        lv.memory = 12*1024
+        lv.memory = 32*1024
         lv.cpus = 4
         lv.storage :file, :bus => 'ide', :cache => 'unsafe', :size => "#{DATASTORE_DISK_SIZE_GB}G"
+
+        # TODO: configure 2 bridge networks on the same virbr0
       end
 
       node.vm.box_url = 'esxi-amd64-libvirt.box'
@@ -61,7 +63,7 @@ Vagrant.configure(2) do |config|
       #!/bin/bash
       yum update -y
       yum makecache
-      yum install -y firefox xorg-x11-xauth kitty-terminfo nss-tools openssl expect
+      yum install -y firefox xorg-x11-xauth kitty-terminfo nss-tools openssl expect bat libxcrypt-compat bind-utils
 
       if ! command -V govc &>/dev/null; then
         wget -q https://github.com/vmware/govmomi/releases/download/v0.34.1/govc_Linux_x86_64.tar.gz
@@ -91,13 +93,27 @@ Vagrant.configure(2) do |config|
 
       mkdir -p ~/.bashrc.d
       echo "alias launchUI='firefox https://esxi-1.esxi.test &>/dev/null &'" > ~/.bashrc.d/aliases
+      echo "export MANPAGER=\"sh -c 'col -bx | bat -l man -p'\"" > ~/.bashrc.d/exports
+      echo "MANROFFOPT=\"-c\"" >> ~/.bashrc.d/exports
+      echo -e "help() {\n\"\$@\" --help 2>&1 | bat --plain --language=help\n}" > ~/.bashrc.d/functions
+
 
       mkdir -p ~/.ssh
-      echo -e "Host *\n\tStrictHostKeychecking no\n" > ~/.ssh/config
+      if grep -q StrictHostKeyChecking ~/.ssh/config; then
+        echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+      fi
       ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
     SCRIPT
 
-    client.vm.provision "routedep", type: "shell", privileged: false, path: "scripts/deploy-photon-router.sh"
+    client.vm.provision "routedep", type: "shell", run: 'never', privileged: false,
+      path: "scripts/deploy-photon-router.sh"
+
+    client.vm.provider 'libvirt' do |lv|
+      lv.storage :file, :device => :cdrom, :path => ENV['PWD'] + '/VMware-VCSA-all-8.0.2-22617221.iso'
+    end
+
+    client.vm.provision "vcsadep", type: "shell", run: 'never', privileged: false,
+      path: "scripts/deploy-vcsa.sh"
   end
 
   config.vm.provider 'libvirt' do |lv, config|

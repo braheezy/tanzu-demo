@@ -36,8 +36,8 @@ if [ ${SETUP_DNS_SERVER} -eq 1 ]; then
     local-data: "haproxy.$DOMAIN A $BASE_IP_RANGE.6"
     local-data-ptr: "$BASE_IP_RANGE.6 haproxy.$DOMAIN"
 
-    local-data: "esxi-1.$DOMAIN A $BASE_IP_RANGE.227"
-    local-data-ptr: "$BASE_IP_RANGE.227 esxi-1.$DOMAIN"
+    local-data: "esxi-1.$DOMAIN A $BASE_IP_RANGE.77"
+    local-data-ptr: "$BASE_IP_RANGE.77 esxi-1.$DOMAIN"
 
     forward-zone:
         name: "."

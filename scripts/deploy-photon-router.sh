@@ -73,6 +73,7 @@ EOF
 # Deploy the configure script to the router. It must be run from VM Console cause SSH will break
 if [ -f /tmp/scripts/configure-photon-router.sh ]; then
   scp /tmp/scripts/configure-photon-router.sh root@$guestIP:/tmp/
+  scp /tmp/scripts/ping_host root@$guestIP:/usr/bin/
 fi
 
 # Setup easy access

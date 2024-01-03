@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -eou pipefail
+
+GREEN='\e[32m'
+RED='\e[31m'
+YELLOW='\e[33m'
+PURPLE='\e[35m'
+RESET='\e[0m'
+
+
+host="$1"
+guest="$2"
+if ping -c 1 "$guest" &>/dev/null ;then
+    echo -e "${GREEN}[Success]${RESET} ping from ${YELLOW}$(hostname) - ($host)${RESET} to ${PURPLE}$guest${RESET}"
+else
+    echo -e "${RED}[Failure]${RESET} ping from ${YELLOW}$(hostname) - ($host)${RESET} to ${PURPLE}$guest${RESET}"
+fi

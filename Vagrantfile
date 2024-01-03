@@ -72,6 +72,7 @@ Vagrant.configure(2) do |config|
       fi
 
       echo "export GOVC_URL='https://root:Rootpass1!@esxi-1.esxi.test'"  > /etc/profile.d/govc.sh
+      echo "export PATH=\$PATH:/tmp/scripts/" > /etc/profile.d/localPath.sh
     SCRIPT
 
     client.vm.provision "setup", type: "shell", privileged: false, inline: <<-SCRIPT
@@ -100,7 +101,8 @@ Vagrant.configure(2) do |config|
 
       mkdir -p ~/.ssh
       if grep -q StrictHostKeyChecking ~/.ssh/config; then
-        echo -e "Host *\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+        echo -e "Host *\n\tStrictHostKeyChecking no" >> ~/.ssh/config
+        echo -e "\n\tUserKnownHostsFile=/dev/null\n" >> ~/.ssh/config
       fi
       ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
     SCRIPT

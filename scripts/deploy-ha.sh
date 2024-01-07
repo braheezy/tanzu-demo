@@ -138,8 +138,6 @@ govc import.ova -options="$tempJSON" -name="$HAProxyDisplayName" -host $VMHost -
 
 # rm -f "$tempJSON" || exit
 
-# govc host.autostart.add $HAProxyDisplayName
-
 # HAProxyIP=$(govc vm.ip $HAProxyDisplayName)
 
 # # Add to SSH config and hosts file

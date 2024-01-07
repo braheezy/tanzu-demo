@@ -34,9 +34,11 @@ EOF
 # EOF
 
 scp "$tempScript" haproxy:/tmp/configure-ha.sh 2>/dev/null
-scp /tmp/scripts/ping_host haproxy:/usr/bin/
+scp /tmp/scripts/ping_host haproxy:/usr/bin/ 2>/dev/null
 
 ssh haproxy "bash /tmp/configure-ha.sh" 2>/dev/null
 ssh haproxy "rm -f /tmp/configure-ha.sh" 2>/dev/null
+
+scp haproxy:/etc/haproxy/server.crt /tmp/server.crt 2>/dev/null
 
 rm "$tempScript"

@@ -1,6 +1,6 @@
 ESXI_DOMAIN = 'esxi.test'
 MANAGEMENT_CERTIFICATE_PATH = "shared/tls/example-esxi-ca/#{ESXI_DOMAIN}"
-DATASTORE_DISK_SIZE_GB = 150
+DATASTORE_DISK_SIZE_GB = 350
 NODE_COUNT = 1
 
 # create the management certificate that will be used to access the esxi
@@ -46,6 +46,10 @@ Vagrant.configure(2) do |config|
 
       # create the datastore1 datastore in the second disk.
       node.vm.provision :shell, privileged: false, path: 'scripts/datastore.sh'
+
+      node.vm.provision :shell, privileged: false, inline: <<-SCRIPT
+        echo "192.168.122.5      vcsa vcsa.esxi.test" >> /etc/hosts
+      SCRIPT
     end
   end
 
@@ -120,8 +124,8 @@ Vagrant.configure(2) do |config|
 
   config.vm.provider 'libvirt' do |lv, config|
     lv.default_prefix = ""
-    lv.memory = 2048
-    lv.cpus = 2
+    lv.memory = 1024
+    lv.cpus = 1
   end
   config.ssh.forward_x11 = true
 end
